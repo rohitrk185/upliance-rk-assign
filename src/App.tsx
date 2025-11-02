@@ -3,6 +3,10 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { theme } from './theme/theme';
 import Home from './pages/Home';
+import CreateRecipe from './pages/CreateRecipe';
+import RecipesList from './pages/RecipesList';
+import CookingSession from './pages/CookingSession';
+import MiniPlayer from './components/MiniPlayer';
 import './App.css';
 
 function App() {
@@ -12,10 +16,11 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/recipes" element={<div>Recipes List - Coming Soon</div>} />
-          <Route path="/create" element={<div>Create Recipe - Coming Soon</div>} />
-          <Route path="/cook/:id" element={<div>Cooking Session - Coming Soon</div>} />
+          <Route path="/recipes" element={<RecipesList />} />
+          <Route path="/create" element={<CreateRecipe />} />
+          <Route path="/cook/:id" element={<CookingSession />} />
         </Routes>
+        <MiniPlayer />
       </Router>
     </ThemeProvider>
   );
