@@ -8,7 +8,6 @@ import RecipesList from './pages/RecipesList';
 import CookingSession from './pages/CookingSession';
 import MiniPlayer from './components/MiniPlayer';
 import SessionTimer from './components/SessionTimer';
-import './App.css';
 
 function App() {
   return (
