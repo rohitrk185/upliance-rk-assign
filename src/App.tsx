@@ -7,6 +7,7 @@ import CreateRecipe from './pages/CreateRecipe';
 import RecipesList from './pages/RecipesList';
 import CookingSession from './pages/CookingSession';
 import MiniPlayer from './components/MiniPlayer';
+import SessionTimer from './components/SessionTimer';
 import './App.css';
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
+        <SessionTimer />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/recipes" element={<RecipesList />} />

@@ -29,6 +29,10 @@ function RecipesList() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const recipes = useAppSelector((state) => state.recipes.recipes);
+  const session = useAppSelector((state) => state.session);
+  
+  // Check if mini player is visible
+  const hasMiniPlayer = !!session.activeRecipeId;
   
   const [selectedDifficulties, setSelectedDifficulties] = useState<Difficulty[]>([]);
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
@@ -82,7 +86,14 @@ function RecipesList() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Container 
+        maxWidth="lg" 
+        sx={{ 
+          mt: 4, 
+          mb: 4,
+          pb: hasMiniPlayer ? 12 : 4, // extra bottom padding when mini player is visible
+        }}
+      >
       <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h4" component="h1">
           All Recipes

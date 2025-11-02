@@ -69,8 +69,8 @@ const sessionSlice = createSlice({
       session.overallRemainingSec = Math.max(0, session.overallRemainingSec - elapsedSec);
       session.lastTickTs = Date.now();
     },
-    stopCurrentStep: (state, action: PayloadAction<{ recipeId: string; isLastStep: boolean; nextStepDurationSec?: number }>) => {
-      const { recipeId, isLastStep, nextStepDurationSec } = action.payload;
+    stopCurrentStep: (state, action: PayloadAction<{ recipeId: string; isLastStep: boolean; nextStepDurationSec?: number; overallRemainingSec?: number }>) => {
+      const { recipeId, isLastStep, nextStepDurationSec, overallRemainingSec } = action.payload;
       const session = state.byRecipeId[recipeId];
       
       if (!session) {
@@ -87,17 +87,21 @@ const sessionSlice = createSlice({
         // Auto-advance to next step
         session.currentStepIndex += 1;
         session.stepRemainingSec = nextStepDurationSec;
+        if (overallRemainingSec !== undefined) {
+          session.overallRemainingSec = overallRemainingSec;
+        }
         session.isRunning = true;
         session.lastTickTs = Date.now();
       }
     },
-    advanceStep: (state, action: PayloadAction<{ recipeId: string; nextStepDurationSec: number }>) => {
-      const { recipeId, nextStepDurationSec } = action.payload;
+    advanceStep: (state, action: PayloadAction<{ recipeId: string; nextStepDurationSec: number; overallRemainingSec: number }>) => {
+      const { recipeId, nextStepDurationSec, overallRemainingSec } = action.payload;
       const session = state.byRecipeId[recipeId];
       
       if (session) {
         session.currentStepIndex += 1;
         session.stepRemainingSec = nextStepDurationSec;
+        session.overallRemainingSec = overallRemainingSec;
         session.isRunning = true;
         session.lastTickTs = Date.now();
       }

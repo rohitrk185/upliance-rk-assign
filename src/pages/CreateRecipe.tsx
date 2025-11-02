@@ -33,6 +33,10 @@ function CreateRecipe() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const recipes = useAppSelector((state) => state.recipes.recipes);
+  const session = useAppSelector((state) => state.session);
+  
+  // Check if mini player is visible (active session exists)
+  const hasMiniPlayer = !!session.activeRecipeId;
   
   const [title, setTitle] = useState('');
   const [cuisine, setCuisine] = useState('');
@@ -173,7 +177,7 @@ function CreateRecipe() {
     setSteps(newSteps);
   };
 
-  // Calculate derived fields
+  // Calculating derived fields
   const calculateDerivedFields = () => {
     const totalTimeMinutes = steps.reduce((sum, step) => sum + step.durationMinutes, 0);
     const totalIngredients = ingredients.length;
@@ -288,7 +292,14 @@ function CreateRecipe() {
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4, pb: 2 }}>
+    <Container 
+      maxWidth="md" 
+      sx={{ 
+        mt: 4, 
+        mb: 4, 
+        pb: hasMiniPlayer ? 12 : 2, // extra bottom padding when mini player is visible
+      }}
+    >
       <Paper sx={{ p: 4 }}>
         <Box sx={{ mb: 4 }}>
           <Button

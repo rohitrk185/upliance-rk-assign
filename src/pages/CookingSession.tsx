@@ -11,7 +11,7 @@ import {
   LinearProgress,
   CircularProgress,
   Snackbar,
-  Alert,
+  Alert
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -44,6 +44,7 @@ function CookingSession() {
   const activeRecipeId = session.activeRecipeId;
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const lastAnnouncedMinuteRef = useRef<number | null>(null);
 
   const recipe = recipes.find((r) => r.id === id);
 
@@ -106,7 +107,7 @@ function CookingSession() {
       if (elapsedMs >= 1000) {
         dispatch(tickSecond({ recipeId: id, elapsedMs }));
       }
-    }, 100); // Check more frequently for accuracy
+    }, 100);
 
     return () => {
       if (intervalRef.current) {
@@ -129,13 +130,70 @@ function CookingSession() {
         setSnackbarMessage('Step ended. Recipe session complete!');
         setSnackbarOpen(true);
       } else {
-        const nextStep = recipe.steps[activeSession.currentStepIndex + 1];
+        const nextStepIndex = activeSession.currentStepIndex + 1;
+        const nextStep = recipe.steps[nextStepIndex];
         const nextStepDurationSec = nextStep.durationMinutes * 60;
-        dispatch(advanceStep({ recipeId: id, nextStepDurationSec }));
+        
+        // Calculate overall remaining: current step + all future steps
+        const futureStepsDurationSec = recipe.steps
+          .slice(nextStepIndex)
+          .reduce((sum, step) => sum + step.durationMinutes * 60, 0);
+        
+        dispatch(advanceStep({ 
+          recipeId: id, 
+          nextStepDurationSec,
+          overallRemainingSec: futureStepsDurationSec,
+        }));
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSession?.stepRemainingSec, activeSession?.currentStepIndex, activeSession?.isRunning, id, dispatch, recipe]);
+
+  // Timer minute announcement effect
+  useEffect(() => {
+    if (!activeSession || !activeSession.isRunning) {
+      lastAnnouncedMinuteRef.current = null;
+      return;
+    }
+
+    const currentMinutes = Math.floor(activeSession.stepRemainingSec / 60);
+    if (lastAnnouncedMinuteRef.current !== null && lastAnnouncedMinuteRef.current !== currentMinutes) {
+      // Announce minute change
+      const announcement = currentMinutes === 0 
+        ? 'Step time remaining: less than 1 minute' 
+        : `Step time remaining: ${currentMinutes} minute${currentMinutes !== 1 ? 's' : ''}`;
+      
+      // Use aria-live region for screen reader announcements
+      const announcementEl = document.getElementById('timer-announcement');
+      if (announcementEl) {
+        announcementEl.textContent = announcement;
+      }
+    }
+    lastAnnouncedMinuteRef.current = currentMinutes;
+  }, [activeSession]);
+
+  // Space key handler for pause/resume
+  useEffect(() => {
+    if (!activeSession || !id) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // handle Space if not typing in an input field
+      if (e.key === ' ' && e.target instanceof HTMLElement && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        // Inline pause/resume logic to avoid dependency on handlePauseResume
+        if (activeSession.isRunning) {
+          dispatch(pauseSession(id));
+        } else {
+          dispatch(resumeSession(id));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeSession, id, dispatch]);
 
   // Format seconds to mm:ss
   const formatTime = (seconds: number): string => {
@@ -172,9 +230,21 @@ function CookingSession() {
       setSnackbarMessage('Step ended. Recipe session complete!');
       setSnackbarOpen(true);
     } else {
-      const nextStep = recipe.steps[activeSession.currentStepIndex + 1];
+      const nextStepIndex = activeSession.currentStepIndex + 1;
+      const nextStep = recipe.steps[nextStepIndex];
       const nextStepDurationSec = nextStep.durationMinutes * 60;
-      dispatch(stopCurrentStep({ recipeId: id, isLastStep: false, nextStepDurationSec }));
+      
+      // Calculate overall remaining: current step + all future steps
+      const futureStepsDurationSec = recipe.steps
+        .slice(nextStepIndex)
+        .reduce((sum, step) => sum + step.durationMinutes * 60, 0);
+      
+      dispatch(stopCurrentStep({ 
+        recipeId: id, 
+        isLastStep: false, 
+        nextStepDurationSec,
+        overallRemainingSec: futureStepsDurationSec,
+      }));
       setSnackbarMessage('Step ended. Moving to next step...');
       setSnackbarOpen(true);
     }
@@ -280,6 +350,11 @@ function CookingSession() {
               value={stepProgress}
               size={120}
               thickness={4}
+              aria-label={`Step progress: ${stepProgress}%`}
+              role="progressbar"
+              aria-valuenow={stepProgress}
+              aria-valuemin={0}
+              aria-valuemax={100}
             />
             <Box
               sx={{
@@ -298,6 +373,21 @@ function CookingSession() {
               </Typography>
             </Box>
           </Box>
+          
+          {/* Hidden aria-live region for timer minute announcements only */}
+          <Box
+            id="timer-announcement"
+            component="div"
+            aria-live="polite"
+            aria-atomic="true"
+            sx={{
+              position: 'absolute',
+              left: '-9999px',
+              width: '1px',
+              height: '1px',
+              overflow: 'hidden',
+            }}
+          />
 
           {/* Controls */}
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
@@ -363,7 +453,16 @@ function CookingSession() {
           <Typography variant="h6" gutterBottom>
             Overall Progress
           </Typography>
-          <LinearProgress variant="determinate" value={overallProgress} sx={{ height: 10, borderRadius: 5, mb: 2 }} />
+          <LinearProgress
+            variant="determinate"
+            value={overallProgress}
+            sx={{ height: 10, borderRadius: 5, mb: 2 }}
+            aria-label={`Overall recipe progress: ${overallProgress}%`}
+            role="progressbar"
+            aria-valuenow={overallProgress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="body2" color="text.secondary">
               Overall remaining: {formatTime(overallRemainingSec)}

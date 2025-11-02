@@ -11,12 +11,24 @@ import {
 } from '@mui/material';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import { useAppSelector } from '../store/hooks';
 
 function Home() {
   const navigate = useNavigate();
+  const session = useAppSelector((state) => state.session);
+  
+  // Check if mini player is visible
+  const hasMiniPlayer = !!session.activeRecipeId;
 
   return (
-    <Container maxWidth="md" sx={{ mt: 8, mb: 4 }}>
+    <Container 
+      maxWidth="md" 
+      sx={{ 
+        mt: 8, 
+        mb: 4,
+        pb: hasMiniPlayer ? 12 : 4, // extra bottom padding when mini player is visible
+      }}
+    >
       <Box sx={{ textAlign: 'center', mb: 6 }}>
         <Typography variant="h3" component="h1" gutterBottom>
           Recipe Builder
